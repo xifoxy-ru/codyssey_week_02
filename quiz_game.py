@@ -1,3 +1,5 @@
+from quiz import Quiz
+
 class QuizGame:
     """콘솔 기반 퀴즈 게임의 메뉴 흐름을 관리하는 클래스."""
 
