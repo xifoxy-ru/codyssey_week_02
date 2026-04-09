@@ -302,6 +302,35 @@ class QuizGame:
                 self.is_running = False
                 return max_value
 
+    def get_confirmation(self, prompt):
+        """y/n 확인 입력을 받는다.
+
+        Args:
+            prompt (str): 확인 안내 문구
+
+        Returns:
+            bool: 확인이면 True, 취소면 False
+        """
+        while True:
+            try:
+                value = input(prompt).strip().lower()
+
+                if value in ("y", "yes"):
+                    return True
+
+                if value in ("n", "no"):
+                    return False
+
+                print("y 또는 n만 입력할 수 있습니다.")
+
+            except KeyboardInterrupt:
+                print("\n입력이 중단되었습니다. 삭제를 취소합니다.")
+                return False
+            except EOFError:
+                print("\n입력이 종료되어 프로그램을 종료합니다.")
+                self.is_running = False
+                return False
+
     def update_best_score(self, score):
         """현재 점수와 최고 점수를 비교해 갱신한다.
 
@@ -425,8 +454,42 @@ class QuizGame:
         print(f"현재 최고 점수: {self.best_score}점")
 
     def delete_quiz(self):
-        """퀴즈 삭제 메뉴의 임시 동작."""
-        print("퀴즈 삭제 기능은 아직 구현 전입니다.")
+        """퀴즈 번호를 받아 삭제하고 저장 파일에도 반영한다."""
+        print("\n=== 퀴즈 삭제 ===")
+
+        if not self.quizzes:
+            print("삭제할 퀴즈가 없습니다.")
+            return
+
+        self.show_quiz_list()
+
+        quiz_number = self.get_choice_number_input(
+            "삭제할 퀴즈 번호를 입력하세요: ",
+            1,
+            len(self.quizzes),
+        )
+
+        if not self.is_running:
+            return
+
+        target_quiz = self.quizzes[quiz_number - 1]
+
+        print(f"\n선택한 퀴즈: {target_quiz.question}")
+        is_confirmed = self.get_confirmation("정말 삭제하시겠습니까? (y/n): ")
+
+        if not self.is_running:
+            return
+
+        if not is_confirmed:
+            print("퀴즈 삭제를 취소했습니다.")
+            return
+
+        deleted_quiz = self.quizzes.pop(quiz_number - 1)
+        self.save_state()
+
+        print("퀴즈가 삭제되었습니다.")
+        print(f"삭제된 문제: {deleted_quiz.question}")
+        print(f"현재 등록된 퀴즈 수: {len(self.quizzes)}개")
 
     def exit_game(self):
         """프로그램을 종료한다."""
