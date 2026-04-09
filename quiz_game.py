@@ -1,4 +1,7 @@
+import json
+
 from quiz import Quiz
+
 
 class QuizGame:
     """콘솔 기반 퀴즈 게임의 메뉴 흐름을 관리하는 클래스."""
@@ -6,6 +9,30 @@ class QuizGame:
     def __init__(self):
         """기본 게임 상태를 초기화한다."""
         self.is_running = True
+        self.default_quiz_file = "default_quizzes.json"
+        self.quizzes = self.load_default_quizzes()
+
+    def load_default_quizzes(self):
+        """기본 퀴즈 파일을 읽어 Quiz 객체 목록으로 변환한다.
+
+        Returns:
+            list[Quiz]: 기본 퀴즈 객체 목록
+        """
+        with open(self.default_quiz_file, "r", encoding="utf-8") as file:
+            quiz_data_list = json.load(file)
+
+        quizzes = []
+
+        for quiz_data in quiz_data_list:
+            quiz = Quiz(
+                question=quiz_data["question"],
+                choices=quiz_data["choices"],
+                answer=quiz_data["answer"],
+                hint=quiz_data.get("hint", ""),
+            )
+            quizzes.append(quiz)
+
+        return quizzes
 
     def display_menu(self):
         """메인 메뉴를 출력한다."""
@@ -75,8 +102,15 @@ class QuizGame:
         print("퀴즈 추가 기능은 아직 구현 전입니다.")
 
     def show_quiz_list(self):
-        """퀴즈 목록 메뉴의 임시 동작."""
-        print("퀴즈 목록 기능은 아직 구현 전입니다.")
+        """등록된 퀴즈 목록을 출력한다."""
+        print("\n=== 퀴즈 목록 ===")
+
+        if not self.quizzes:
+            print("등록된 퀴즈가 없습니다.")
+            return
+
+        for index, quiz in enumerate(self.quizzes, start=1):
+            print(f"{index}. {quiz.question}")
 
     def show_score(self):
         """점수 확인 메뉴의 임시 동작."""
