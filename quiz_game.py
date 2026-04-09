@@ -110,6 +110,85 @@ class QuizGame:
                 self.is_running = False
                 return choice_count
 
+    def get_non_empty_input(self, prompt):
+        """비어 있지 않은 문자열 입력을 받는다.
+
+        Args:
+            prompt (str): 입력 안내 문구
+
+        Returns:
+            str: 공백이 제거된 입력 문자열
+        """
+        while True:
+            try:
+                value = input(prompt).strip()
+
+                if value:
+                    return value
+
+                print("빈 값은 입력할 수 없습니다.")
+
+            except KeyboardInterrupt:
+                print("\n입력이 중단되었습니다. 다시 입력을 받습니다.")
+            except EOFError:
+                print("\n입력이 종료되어 프로그램을 종료합니다.")
+                self.is_running = False
+                return ""
+
+    def get_optional_input(self, prompt):
+        """선택 입력 문자열을 받는다.
+
+        Args:
+            prompt (str): 입력 안내 문구
+
+        Returns:
+            str: 공백이 제거된 입력 문자열
+        """
+        try:
+            return input(prompt).strip()
+        except KeyboardInterrupt:
+            print("\n입력이 중단되었습니다. 힌트 없이 진행합니다.")
+            return ""
+        except EOFError:
+            print("\n입력이 종료되어 프로그램을 종료합니다.")
+            self.is_running = False
+            return ""
+
+    def get_choice_number_input(self, prompt, min_value, max_value):
+        """지정된 범위의 숫자 입력을 받는다.
+
+        Args:
+            prompt (str): 입력 안내 문구
+            min_value (int): 최소값
+            max_value (int): 최대값
+
+        Returns:
+            int: 검증된 숫자 입력값
+        """
+        while True:
+            try:
+                raw_value = input(prompt).strip()
+
+                if not raw_value:
+                    print("입력이 비어 있습니다. 숫자를 입력하세요.")
+                    continue
+
+                number = int(raw_value)
+
+                if min_value <= number <= max_value:
+                    return number
+
+                print(f"{min_value}부터 {max_value}까지의 숫자를 입력하세요.")
+
+            except ValueError:
+                print("숫자만 입력할 수 있습니다.")
+            except KeyboardInterrupt:
+                print("\n입력이 중단되었습니다. 다시 입력을 받습니다.")
+            except EOFError:
+                print("\n입력이 종료되어 프로그램을 종료합니다.")
+                self.is_running = False
+                return max_value
+
     def update_best_score(self, score):
         """현재 점수와 최고 점수를 비교해 갱신한다.
 
@@ -176,8 +255,44 @@ class QuizGame:
         print(f"최고 점수: {self.best_score}점")
 
     def add_quiz(self):
-        """퀴즈 추가 메뉴의 임시 동작."""
-        print("퀴즈 추가 기능은 아직 구현 전입니다.")
+        """새 퀴즈를 입력받아 목록에 추가한다."""
+        print("\n=== 퀴즈 추가 ===")
+
+        question = self.get_non_empty_input("문제를 입력하세요: ")
+
+        if not self.is_running:
+            return
+
+        choices = []
+
+        for index in range(1, 5):
+            choice = self.get_non_empty_input(f"{index}번 선택지를 입력하세요: ")
+
+            if not self.is_running:
+                return
+
+            choices.append(choice)
+
+        answer = self.get_choice_number_input("정답 번호를 입력하세요 (1~4): ", 1, 4)
+
+        if not self.is_running:
+            return
+
+        hint = self.get_optional_input("힌트를 입력하세요 (선택): ")
+
+        if not self.is_running:
+            return
+
+        new_quiz = Quiz(
+            question=question,
+            choices=choices,
+            answer=answer,
+            hint=hint,
+        )
+        self.quizzes.append(new_quiz)
+
+        print("새 퀴즈가 추가되었습니다.")
+        print(f"현재 등록된 퀴즈 수: {len(self.quizzes)}개")
 
     def show_quiz_list(self):
         """등록된 퀴즈 목록을 출력한다."""
