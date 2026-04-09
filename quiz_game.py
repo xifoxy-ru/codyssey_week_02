@@ -74,6 +74,41 @@ class QuizGame:
                 self.is_running = False
                 return 6
 
+    def get_answer_choice(self, quiz):
+        """문제의 정답 번호를 입력받고 검증한다.
+
+        Args:
+            quiz (Quiz): 현재 출제 중인 퀴즈 객체
+
+        Returns:
+            int: 유효한 정답 번호
+        """
+        choice_count = len(quiz.choices)
+
+        while True:
+            try:
+                raw_value = input("정답 번호를 입력하세요: ").strip()
+
+                if not raw_value:
+                    print("입력이 비어 있습니다. 정답 번호를 입력하세요.")
+                    continue
+
+                answer = int(raw_value)
+
+                if 1 <= answer <= choice_count:
+                    return answer
+
+                print(f"정답 번호는 1부터 {choice_count}까지 입력해야 합니다.")
+
+            except ValueError:
+                print("숫자만 입력할 수 있습니다.")
+            except KeyboardInterrupt:
+                print("\n입력이 중단되었습니다. 다시 문제 입력을 받습니다.")
+            except EOFError:
+                print("\n입력이 종료되어 프로그램을 종료합니다.")
+                self.is_running = False
+                return choice_count
+
     def handle_menu(self, choice):
         """선택한 메뉴 번호에 따라 동작한다.
 
@@ -94,8 +129,38 @@ class QuizGame:
             self.exit_game()
 
     def play_quiz(self):
-        """퀴즈 풀기 메뉴의 임시 동작."""
-        print("퀴즈 풀기 기능은 아직 구현 전입니다.")
+        """등록된 퀴즈를 순서대로 출제하고 결과를 출력한다."""
+        print("\n=== 퀴즈 풀기 ===")
+
+        if not self.quizzes:
+            print("등록된 퀴즈가 없습니다.")
+            return
+
+        correct_count = 0
+        total_count = len(self.quizzes)
+
+        for index, quiz in enumerate(self.quizzes, start=1):
+            print(f"\n[{index}/{total_count}]")
+            quiz.display()
+
+            user_answer = self.get_answer_choice(quiz)
+
+            if not self.is_running:
+                return
+
+            if quiz.is_correct(user_answer):
+                correct_count += 1
+                print("정답입니다.")
+            else:
+                correct_text = quiz.choices[quiz.answer - 1]
+                print("오답입니다.")
+                print(f"정답은 {quiz.answer}번: {correct_text}")
+
+        score = int((correct_count / total_count) * 100)
+
+        print("\n=== 퀴즈 결과 ===")
+        print(f"정답 수: {correct_count}/{total_count}")
+        print(f"점수: {score}점")
 
     def add_quiz(self):
         """퀴즈 추가 메뉴의 임시 동작."""
