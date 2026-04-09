@@ -15,14 +15,41 @@ class QuizGame:
         self.quizzes = self.load_quizzes()
         self.best_score = 0
 
+    def load_json_file(self, file_path, default_value):
+        """JSON 파일을 읽고 실패 시 기본값을 반환한다.
+
+        Args:
+            file_path (str): 읽을 파일 경로
+            default_value (Any): 실패 시 반환할 기본값
+
+        Returns:
+            Any: JSON 파싱 결과 또는 기본값
+        """
+        try:
+            with open(file_path, "r", encoding="utf-8") as file:
+                return json.load(file)
+        except FileNotFoundError:
+            print(f"{file_path} 파일이 없어 기본값으로 진행합니다.")
+        except json.JSONDecodeError:
+            print(f"{file_path} 파일이 손상되어 기본값으로 진행합니다.")
+        except OSError:
+            print(f"{file_path} 파일을 읽는 중 오류가 발생했습니다.")
+
+        return default_value
+
     def load_default_quiz_data(self):
         """기본 퀴즈 데이터 파일을 읽어 리스트로 반환한다.
 
         Returns:
             list[dict]: 기본 퀴즈 데이터 목록
         """
-        with open(self.default_quiz_file, "r", encoding="utf-8") as file:
-            return json.load(file)
+        quiz_data_list = self.load_json_file(self.default_quiz_file, [])
+
+        if not isinstance(quiz_data_list, list):
+            print("기본 퀴즈 데이터 형식이 올바르지 않아 빈 목록으로 처리합니다.")
+            return []
+
+        return quiz_data_list
 
     def create_quiz_objects(self, quiz_data_list):
         """딕셔너리 목록을 Quiz 객체 목록으로 변환한다.
@@ -36,11 +63,39 @@ class QuizGame:
         quizzes = []
 
         for quiz_data in quiz_data_list:
+            if not isinstance(quiz_data, dict):
+                print("잘못된 퀴즈 데이터 항목을 건너뜁니다.")
+                continue
+
+            question = quiz_data.get("question")
+            choices = quiz_data.get("choices")
+            answer = quiz_data.get("answer")
+            hint = quiz_data.get("hint", "")
+
+            if not isinstance(question, str) or not question.strip():
+                print("문제 형식이 올바르지 않은 항목을 건너뜁니다.")
+                continue
+
+            if not isinstance(choices, list) or len(choices) != 4:
+                print("선택지 형식이 올바르지 않은 항목을 건너뜁니다.")
+                continue
+
+            if not all(isinstance(choice, str) and choice.strip() for choice in choices):
+                print("선택지 내용이 올바르지 않은 항목을 건너뜁니다.")
+                continue
+
+            if not isinstance(answer, int) or not 1 <= answer <= 4:
+                print("정답 번호가 올바르지 않은 항목을 건너뜁니다.")
+                continue
+
+            if not isinstance(hint, str):
+                hint = ""
+
             quiz = Quiz(
-                question=quiz_data["question"],
-                choices=quiz_data["choices"],
-                answer=quiz_data["answer"],
-                hint=quiz_data.get("hint", ""),
+                question=question.strip(),
+                choices=[choice.strip() for choice in choices],
+                answer=answer,
+                hint=hint.strip(),
             )
             quizzes.append(quiz)
 
@@ -52,8 +107,11 @@ class QuizGame:
             "quizzes": [quiz.to_dict() for quiz in self.quizzes],
         }
 
-        with open(self.state_file, "w", encoding="utf-8") as file:
-            json.dump(state_data, file, ensure_ascii=False, indent=2)
+        try:
+            with open(self.state_file, "w", encoding="utf-8") as file:
+                json.dump(state_data, file, ensure_ascii=False, indent=2)
+        except OSError:
+            print("state.json 저장 중 오류가 발생했습니다.")
 
     def load_quizzes(self):
         """state.json 또는 기본 퀴즈 파일에서 퀴즈를 불러온다.
@@ -62,14 +120,30 @@ class QuizGame:
             list[Quiz]: Quiz 객체 목록
         """
         if os.path.exists(self.state_file):
-            with open(self.state_file, "r", encoding="utf-8") as file:
-                state_data = json.load(file)
+            state_data = self.load_json_file(self.state_file, {})
 
-            quiz_data_list = state_data.get("quizzes", [])
-            return self.create_quiz_objects(quiz_data_list)
+            if not isinstance(state_data, dict):
+                print("state.json 형식이 올바르지 않아 기본 퀴즈로 복구합니다.")
+            else:
+                quiz_data_list = state_data.get("quizzes", [])
+
+                if isinstance(quiz_data_list, list):
+                    quizzes = self.create_quiz_objects(quiz_data_list)
+
+                    if quizzes:
+                        return quizzes
+
+                    print("state.json 퀴즈 데이터가 비어 있거나 잘못되어 복구를 시도합니다.")
+                else:
+                    print("state.json의 quizzes 형식이 올바르지 않아 복구를 시도합니다.")
 
         quiz_data_list = self.load_default_quiz_data()
         quizzes = self.create_quiz_objects(quiz_data_list)
+
+        if not quizzes:
+            print("기본 퀴즈 데이터도 비어 있어 빈 상태로 시작합니다.")
+            return []
+
         self.quizzes = quizzes
         self.save_state()
         return quizzes
