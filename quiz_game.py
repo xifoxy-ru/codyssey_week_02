@@ -1,4 +1,5 @@
 import json
+import os
 
 from quiz import Quiz
 
@@ -10,18 +11,28 @@ class QuizGame:
         """기본 게임 상태를 초기화한다."""
         self.is_running = True
         self.default_quiz_file = "default_quizzes.json"
-        self.quizzes = self.load_default_quizzes()
+        self.state_file = "state.json"
+        self.quizzes = self.load_quizzes()
         self.best_score = 0
 
-    def load_default_quizzes(self):
-        """기본 퀴즈 파일을 읽어 Quiz 객체 목록으로 변환한다.
+    def load_default_quiz_data(self):
+        """기본 퀴즈 데이터 파일을 읽어 리스트로 반환한다.
 
         Returns:
-            list[Quiz]: 기본 퀴즈 객체 목록
+            list[dict]: 기본 퀴즈 데이터 목록
         """
         with open(self.default_quiz_file, "r", encoding="utf-8") as file:
-            quiz_data_list = json.load(file)
+            return json.load(file)
 
+    def create_quiz_objects(self, quiz_data_list):
+        """딕셔너리 목록을 Quiz 객체 목록으로 변환한다.
+
+        Args:
+            quiz_data_list (list[dict]): 퀴즈 데이터 목록
+
+        Returns:
+            list[Quiz]: Quiz 객체 목록
+        """
         quizzes = []
 
         for quiz_data in quiz_data_list:
@@ -33,6 +44,34 @@ class QuizGame:
             )
             quizzes.append(quiz)
 
+        return quizzes
+
+    def save_state(self):
+        """현재 퀴즈 목록을 state.json 파일에 저장한다."""
+        state_data = {
+            "quizzes": [quiz.to_dict() for quiz in self.quizzes],
+        }
+
+        with open(self.state_file, "w", encoding="utf-8") as file:
+            json.dump(state_data, file, ensure_ascii=False, indent=2)
+
+    def load_quizzes(self):
+        """state.json 또는 기본 퀴즈 파일에서 퀴즈를 불러온다.
+
+        Returns:
+            list[Quiz]: Quiz 객체 목록
+        """
+        if os.path.exists(self.state_file):
+            with open(self.state_file, "r", encoding="utf-8") as file:
+                state_data = json.load(file)
+
+            quiz_data_list = state_data.get("quizzes", [])
+            return self.create_quiz_objects(quiz_data_list)
+
+        quiz_data_list = self.load_default_quiz_data()
+        quizzes = self.create_quiz_objects(quiz_data_list)
+        self.quizzes = quizzes
+        self.save_state()
         return quizzes
 
     def display_menu(self):
@@ -290,6 +329,7 @@ class QuizGame:
             hint=hint,
         )
         self.quizzes.append(new_quiz)
+        self.save_state()
 
         print("새 퀴즈가 추가되었습니다.")
         print(f"현재 등록된 퀴즈 수: {len(self.quizzes)}개")
