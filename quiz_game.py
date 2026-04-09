@@ -1,5 +1,6 @@
 import json
 import os
+import random
 
 from quiz import Quiz
 
@@ -133,9 +134,15 @@ class QuizGame:
                     if quizzes:
                         return quizzes
 
-                    print("state.json 퀴즈 데이터가 비어 있거나 잘못되어 복구를 시도합니다.")
+                    print(
+                        "state.json 퀴즈 데이터가 비어 있거나 "
+                        "잘못되어 복구를 시도합니다."
+                    )
                 else:
-                    print("state.json의 quizzes 형식이 올바르지 않아 복구를 시도합니다.")
+                    print(
+                        "state.json의 quizzes 형식이 올바르지 않아 "
+                        "복구를 시도합니다."
+                    )
 
         quiz_data_list = self.load_default_quiz_data()
         quizzes = self.create_quiz_objects(quiz_data_list)
@@ -331,6 +338,14 @@ class QuizGame:
                 self.is_running = False
                 return False
 
+    def get_randomized_quizzes(self):
+        """현재 퀴즈 목록을 랜덤 순서로 섞어 반환한다.
+
+        Returns:
+            list[Quiz]: 랜덤 순서의 퀴즈 목록
+        """
+        return random.sample(self.quizzes, len(self.quizzes))
+
     def update_best_score(self, score):
         """현재 점수와 최고 점수를 비교해 갱신한다.
 
@@ -361,17 +376,18 @@ class QuizGame:
             self.exit_game()
 
     def play_quiz(self):
-        """등록된 퀴즈를 순서대로 출제하고 결과를 출력한다."""
+        """등록된 퀴즈를 랜덤 순서로 출제하고 결과를 출력한다."""
         print("\n=== 퀴즈 풀기 ===")
 
         if not self.quizzes:
             print("등록된 퀴즈가 없습니다.")
             return
 
+        quiz_list = self.get_randomized_quizzes()
         correct_count = 0
-        total_count = len(self.quizzes)
+        total_count = len(quiz_list)
 
-        for index, quiz in enumerate(self.quizzes, start=1):
+        for index, quiz in enumerate(quiz_list, start=1):
             print(f"\n[{index}/{total_count}]")
             quiz.display()
 
