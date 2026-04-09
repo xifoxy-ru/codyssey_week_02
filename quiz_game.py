@@ -1,6 +1,7 @@
 import json
 import os
 import random
+from datetime import datetime
 
 from quiz import Quiz
 
@@ -13,9 +14,10 @@ class QuizGame:
         self.is_running = True
         self.default_quiz_file = "default_quizzes.json"
         self.state_file = "state.json"
-        self.quizzes = self.load_quizzes()
-        self.best_score = 0
         self.hint_penalty = 5
+        self.best_score = 0
+        self.score_history = []
+        self.quizzes = self.load_state()
 
     def load_json_file(self, file_path, default_value):
         """JSON 파일을 읽고 실패 시 기본값을 반환한다.
@@ -103,10 +105,35 @@ class QuizGame:
 
         return quizzes
 
+    def create_initial_state_data(self):
+        """초기 state 데이터를 생성한다.
+
+        Returns:
+            dict: 초기 상태 데이터
+        """
+        quiz_data_list = self.load_default_quiz_data()
+        quizzes = self.create_quiz_objects(quiz_data_list)
+
+        if not quizzes:
+            print("기본 퀴즈 데이터도 비어 있어 빈 상태로 시작합니다.")
+            return {
+                "quizzes": [],
+                "best_score": 0,
+                "score_history": [],
+            }
+
+        return {
+            "quizzes": [quiz.to_dict() for quiz in quizzes],
+            "best_score": 0,
+            "score_history": [],
+        }
+
     def save_state(self):
-        """현재 퀴즈 목록을 state.json 파일에 저장한다."""
+        """현재 상태를 state.json 파일에 저장한다."""
         state_data = {
             "quizzes": [quiz.to_dict() for quiz in self.quizzes],
+            "best_score": self.best_score,
+            "score_history": self.score_history,
         }
 
         try:
@@ -115,46 +142,124 @@ class QuizGame:
         except OSError:
             print("state.json 저장 중 오류가 발생했습니다.")
 
-    def load_quizzes(self):
-        """state.json 또는 기본 퀴즈 파일에서 퀴즈를 불러온다.
+    def load_state(self):
+        """state.json 또는 기본 퀴즈 파일에서 전체 상태를 불러온다.
 
         Returns:
             list[Quiz]: Quiz 객체 목록
         """
-        if os.path.exists(self.state_file):
-            state_data = self.load_json_file(self.state_file, {})
+        state_data = self.load_json_file(self.state_file, None)
 
-            if not isinstance(state_data, dict):
-                print("state.json 형식이 올바르지 않아 기본 퀴즈로 복구합니다.")
-            else:
-                quiz_data_list = state_data.get("quizzes", [])
+        if not isinstance(state_data, dict):
+            state_data = self.create_initial_state_data()
+            self.best_score = 0
+            self.score_history = []
+            quizzes = self.create_quiz_objects(state_data["quizzes"])
+            self.quizzes = quizzes
+            self.save_state()
+            return quizzes
 
-                if isinstance(quiz_data_list, list):
-                    quizzes = self.create_quiz_objects(quiz_data_list)
+        quiz_data_list = state_data.get("quizzes", [])
+        best_score = state_data.get("best_score", 0)
+        score_history = state_data.get("score_history", [])
 
-                    if quizzes:
-                        return quizzes
+        if not isinstance(quiz_data_list, list):
+            print("state.json의 quizzes 형식이 올바르지 않아 복구를 시도합니다.")
+            state_data = self.create_initial_state_data()
+            quiz_data_list = state_data["quizzes"]
 
-                    print(
-                        "state.json 퀴즈 데이터가 비어 있거나 "
-                        "잘못되어 복구를 시도합니다."
-                    )
-                else:
-                    print(
-                        "state.json의 quizzes 형식이 올바르지 않아 "
-                        "복구를 시도합니다."
-                    )
+        if not isinstance(best_score, int):
+            print("state.json의 best_score 형식이 올바르지 않아 0으로 초기화합니다.")
+            best_score = 0
 
-        quiz_data_list = self.load_default_quiz_data()
+        if not isinstance(score_history, list):
+            print("state.json의 score_history 형식이 올바르지 않아 빈 목록으로 초기화합니다.")
+            score_history = []
+
         quizzes = self.create_quiz_objects(quiz_data_list)
 
-        if not quizzes:
-            print("기본 퀴즈 데이터도 비어 있어 빈 상태로 시작합니다.")
-            return []
+        if not quizzes and quiz_data_list:
+            print("state.json의 퀴즈 데이터가 잘못되어 기본 퀴즈로 복구합니다.")
+            state_data = self.create_initial_state_data()
+            quiz_data_list = state_data["quizzes"]
+            quizzes = self.create_quiz_objects(quiz_data_list)
+            best_score = 0
+            score_history = []
 
+        self.best_score = best_score
+        self.score_history = self.validate_score_history(score_history)
         self.quizzes = quizzes
-        self.save_state()
+
+        if not os.path.exists(self.state_file):
+            self.save_state()
+
         return quizzes
+
+    def validate_score_history(self, score_history):
+        """점수 히스토리 목록을 검증하고 유효한 항목만 반환한다.
+
+        Args:
+            score_history (list): 점수 히스토리 원본 목록
+
+        Returns:
+            list[dict]: 검증된 점수 히스토리 목록
+        """
+        validated_history = []
+
+        for entry in score_history:
+            if not isinstance(entry, dict):
+                continue
+
+            played_at = entry.get("played_at")
+            question_count = entry.get("question_count")
+            correct_count = entry.get("correct_count")
+            hint_used_count = entry.get("hint_used_count")
+            score = entry.get("score")
+
+            if not isinstance(played_at, str) or not played_at.strip():
+                continue
+
+            if not isinstance(question_count, int) or question_count < 0:
+                continue
+
+            if not isinstance(correct_count, int) or correct_count < 0:
+                continue
+
+            if not isinstance(hint_used_count, int) or hint_used_count < 0:
+                continue
+
+            if not isinstance(score, int) or score < 0:
+                continue
+
+            validated_history.append(
+                {
+                    "played_at": played_at.strip(),
+                    "question_count": question_count,
+                    "correct_count": correct_count,
+                    "hint_used_count": hint_used_count,
+                    "score": score,
+                }
+            )
+
+        return validated_history
+
+    def record_score_history(self, question_count, correct_count, hint_used_count, score):
+        """현재 플레이 결과를 점수 히스토리에 추가한다.
+
+        Args:
+            question_count (int): 푼 문제 수
+            correct_count (int): 맞힌 문제 수
+            hint_used_count (int): 힌트 사용 횟수
+            score (int): 최종 점수
+        """
+        history_entry = {
+            "played_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "question_count": question_count,
+            "correct_count": correct_count,
+            "hint_used_count": hint_used_count,
+            "score": score,
+        }
+        self.score_history.append(history_entry)
 
     def display_menu(self):
         """메인 메뉴를 출력한다."""
@@ -478,6 +583,13 @@ class QuizGame:
 
         score = self.calculate_score(correct_count, total_count, hint_used_count)
         self.update_best_score(score)
+        self.record_score_history(
+            question_count=total_count,
+            correct_count=correct_count,
+            hint_used_count=hint_used_count,
+            score=score,
+        )
+        self.save_state()
 
         print("\n=== 퀴즈 결과 ===")
         print(f"정답 수: {correct_count}/{total_count}")
@@ -538,9 +650,26 @@ class QuizGame:
             print(f"{index}. {quiz.question}")
 
     def show_score(self):
-        """현재 최고 점수를 출력한다."""
+        """현재 최고 점수와 최근 점수 기록을 출력한다."""
         print("\n=== 점수 확인 ===")
         print(f"현재 최고 점수: {self.best_score}점")
+
+        if not self.score_history:
+            print("저장된 점수 기록이 없습니다.")
+            return
+
+        print("\n최근 점수 기록:")
+        recent_history = self.score_history[-5:]
+
+        for index, history in enumerate(recent_history, start=1):
+            print(
+                f"{index}. "
+                f"{history['played_at']} | "
+                f"문제 수: {history['question_count']} | "
+                f"정답 수: {history['correct_count']} | "
+                f"힌트 사용: {history['hint_used_count']} | "
+                f"점수: {history['score']}점"
+            )
 
     def delete_quiz(self):
         """퀴즈 번호를 받아 삭제하고 저장 파일에도 반영한다."""
