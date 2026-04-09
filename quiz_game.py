@@ -346,6 +346,22 @@ class QuizGame:
         """
         return random.sample(self.quizzes, len(self.quizzes))
 
+    def get_quiz_count_to_play(self, max_count):
+        """플레이할 문제 수를 입력받는다.
+
+        Args:
+            max_count (int): 선택 가능한 최대 문제 수
+
+        Returns:
+            int: 플레이할 문제 수
+        """
+        print(f"현재 풀 수 있는 문제는 총 {max_count}개입니다.")
+        return self.get_choice_number_input(
+            "몇 문제를 풀겠습니까?: ",
+            1,
+            max_count,
+        )
+
     def update_best_score(self, score):
         """현재 점수와 최고 점수를 비교해 갱신한다.
 
@@ -383,7 +399,15 @@ class QuizGame:
             print("등록된 퀴즈가 없습니다.")
             return
 
-        quiz_list = self.get_randomized_quizzes()
+        max_count = len(self.quizzes)
+        quiz_count = self.get_quiz_count_to_play(max_count)
+
+        if not self.is_running:
+            return
+
+        randomized_quizzes = self.get_randomized_quizzes()
+        quiz_list = randomized_quizzes[:quiz_count]
+
         correct_count = 0
         total_count = len(quiz_list)
 
