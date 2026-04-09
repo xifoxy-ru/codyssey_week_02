@@ -11,6 +11,7 @@ class QuizGame:
         self.is_running = True
         self.default_quiz_file = "default_quizzes.json"
         self.quizzes = self.load_default_quizzes()
+        self.best_score = 0
 
     def load_default_quizzes(self):
         """기본 퀴즈 파일을 읽어 Quiz 객체 목록으로 변환한다.
@@ -109,6 +110,16 @@ class QuizGame:
                 self.is_running = False
                 return choice_count
 
+    def update_best_score(self, score):
+        """현재 점수와 최고 점수를 비교해 갱신한다.
+
+        Args:
+            score (int): 이번 플레이 점수
+        """
+        if score > self.best_score:
+            self.best_score = score
+            print("최고 점수가 갱신되었습니다.")
+
     def handle_menu(self, choice):
         """선택한 메뉴 번호에 따라 동작한다.
 
@@ -157,10 +168,12 @@ class QuizGame:
                 print(f"정답은 {quiz.answer}번: {correct_text}")
 
         score = int((correct_count / total_count) * 100)
+        self.update_best_score(score)
 
         print("\n=== 퀴즈 결과 ===")
         print(f"정답 수: {correct_count}/{total_count}")
         print(f"점수: {score}점")
+        print(f"최고 점수: {self.best_score}점")
 
     def add_quiz(self):
         """퀴즈 추가 메뉴의 임시 동작."""
@@ -178,8 +191,9 @@ class QuizGame:
             print(f"{index}. {quiz.question}")
 
     def show_score(self):
-        """점수 확인 메뉴의 임시 동작."""
-        print("점수 확인 기능은 아직 구현 전입니다.")
+        """현재 최고 점수를 출력한다."""
+        print("\n=== 점수 확인 ===")
+        print(f"현재 최고 점수: {self.best_score}점")
 
     def delete_quiz(self):
         """퀴즈 삭제 메뉴의 임시 동작."""
