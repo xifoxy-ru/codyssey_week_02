@@ -15,6 +15,7 @@ class QuizGame:
         self.state_file = "state.json"
         self.quizzes = self.load_quizzes()
         self.best_score = 0
+        self.hint_penalty = 5
 
     def load_json_file(self, file_path, default_value):
         """JSON 파일을 읽고 실패 시 기본값을 반환한다.
@@ -338,6 +339,30 @@ class QuizGame:
                 self.is_running = False
                 return False
 
+    def get_hint_usage(self, quiz):
+        """힌트 사용 여부를 확인하고, 사용 시 힌트를 출력한다.
+
+        Args:
+            quiz (Quiz): 현재 문제
+
+        Returns:
+            bool: 힌트를 사용했으면 True, 아니면 False
+        """
+        if not quiz.hint:
+            return False
+
+        is_confirmed = self.get_confirmation("힌트를 보시겠습니까? (y/n): ")
+
+        if not self.is_running:
+            return False
+
+        if is_confirmed:
+            print(f"힌트: {quiz.hint}")
+            print(f"힌트를 사용하면 {self.hint_penalty}점 차감됩니다.")
+            return True
+
+        return False
+
     def get_randomized_quizzes(self):
         """현재 퀴즈 목록을 랜덤 순서로 섞어 반환한다.
 
@@ -361,6 +386,22 @@ class QuizGame:
             1,
             max_count,
         )
+
+    def calculate_score(self, correct_count, total_count, hint_used_count):
+        """정답 수와 힌트 사용 횟수를 바탕으로 최종 점수를 계산한다.
+
+        Args:
+            correct_count (int): 정답 개수
+            total_count (int): 전체 문제 수
+            hint_used_count (int): 힌트 사용 횟수
+
+        Returns:
+            int: 최종 점수
+        """
+        base_score = int((correct_count / total_count) * 100)
+        penalty_score = hint_used_count * self.hint_penalty
+        final_score = base_score - penalty_score
+        return max(final_score, 0)
 
     def update_best_score(self, score):
         """현재 점수와 최고 점수를 비교해 갱신한다.
@@ -409,11 +450,18 @@ class QuizGame:
         quiz_list = randomized_quizzes[:quiz_count]
 
         correct_count = 0
+        hint_used_count = 0
         total_count = len(quiz_list)
 
         for index, quiz in enumerate(quiz_list, start=1):
             print(f"\n[{index}/{total_count}]")
             quiz.display()
+
+            if self.get_hint_usage(quiz):
+                hint_used_count += 1
+
+            if not self.is_running:
+                return
 
             user_answer = self.get_answer_choice(quiz)
 
@@ -428,11 +476,12 @@ class QuizGame:
                 print("오답입니다.")
                 print(f"정답은 {quiz.answer}번: {correct_text}")
 
-        score = int((correct_count / total_count) * 100)
+        score = self.calculate_score(correct_count, total_count, hint_used_count)
         self.update_best_score(score)
 
         print("\n=== 퀴즈 결과 ===")
         print(f"정답 수: {correct_count}/{total_count}")
+        print(f"힌트 사용 횟수: {hint_used_count}회")
         print(f"점수: {score}점")
         print(f"최고 점수: {self.best_score}점")
 
