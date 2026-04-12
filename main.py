@@ -1,5 +1,4 @@
-from quiz_game import QuizGame
-
+from app.quiz_game import QuizGame
 
 def main():
     """프로그램 시작 함수."""

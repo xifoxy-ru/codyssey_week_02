@@ -1,8 +1,8 @@
 class FileConfig:
     """파일 및 시스템 관련 상수를 정의한다."""
 
-    DEFAULT_QUIZ_FILE = "default_quizzes.json"
-    STATE_FILE = "state.json"
+    DEFAULT_QUIZ_FILE = "data/default_quizzes.json"
+    STATE_FILE = "data/state.json"
     ENCODING = "utf-8"
     JSON_INDENT = 2
     CLEAR_COMMAND_WINDOWS = "cls"
