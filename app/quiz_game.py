@@ -284,8 +284,11 @@ class QuizGame:
                 return MenuOption.EXIT
 
     def get_answer_choice(self, quiz):
-        """문제의 정답 번호를 입력받고 검증한다."""
+        """정답 번호 또는 힌트 요청 입력을 처리한다."""
         choice_count = len(quiz.choices)
+        hint_used = False
+
+        print(Text.HINT_GUIDE)
 
         while True:
             try:
@@ -295,21 +298,40 @@ class QuizGame:
                     print(Text.EMPTY_ANSWER_INPUT)
                     continue
 
+                lowered_value = raw_value.lower()
+
+                if lowered_value in InputValue.YES_VALUES:
+                    if not quiz.hint:
+                        print(Text.NO_HINT)
+                        continue
+
+                    if not hint_used:
+                        print(Text.HINT_TEMPLATE.format(hint=quiz.hint))
+                        print(
+                            Text.HINT_PENALTY_TEMPLATE.format(
+                                penalty=self.hint_penalty
+                            )
+                        )
+                        hint_used = True
+                    else:
+                        print(Text.HINT_ALREADY_SHOWN)
+                    continue
+
                 answer = int(raw_value)
 
                 if GameRule.CHOICE_MIN <= answer <= choice_count:
-                    return answer
+                    return answer, hint_used
 
                 print(Text.ANSWER_RANGE_TEMPLATE.format(max_value=choice_count))
 
             except ValueError:
-                print(Text.NUMBER_ONLY)
+                print(Text.ANSWER_OR_Y_ONLY)
             except KeyboardInterrupt:
                 print(Text.INTERRUPT_ANSWER)
             except EOFError:
                 print(Text.EOF_SAFE_EXIT)
                 self.is_running = False
-                return choice_count
+                return choice_count, hint_used
 
     def get_non_empty_input(self, prompt):
         """비어 있지 않은 문자열 입력을 받는다."""
@@ -481,16 +503,13 @@ class QuizGame:
             print(Text.PROGRESS_TEMPLATE.format(index=index, total_count=total_count))
             quiz.display()
 
-            if self.get_hint_usage(quiz):
+            user_answer, hint_used = self.get_answer_choice(quiz)
+
+            if not self.is_running:
+                return
+
+            if hint_used:
                 hint_used_count += 1
-
-            if not self.is_running:
-                return
-
-            user_answer = self.get_answer_choice(quiz)
-
-            if not self.is_running:
-                return
 
             if quiz.is_correct(user_answer):
                 print(Text.CORRECT)
