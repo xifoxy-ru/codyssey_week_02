@@ -3,9 +3,9 @@ import os
 import random
 from datetime import datetime
 
-from constants import FileConfig, GameRule, InputValue, JsonKey, Text
-from enums import MenuOption
-from quiz import Quiz
+from app.quiz import Quiz
+from app.constants import FileConfig, GameRule, InputValue, JsonKey, Text
+from app.enums import MenuOption
 
 
 class QuizGame:
@@ -35,6 +35,7 @@ class QuizGame:
         try:
             input(Text.PAUSE_PROMPT)
         except (KeyboardInterrupt, EOFError):
+            print(Text.EOF_SAFE_EXIT)
             self.is_running = False
 
     def load_json_file(self, file_path, default_value):
