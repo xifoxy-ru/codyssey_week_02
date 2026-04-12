@@ -76,7 +76,6 @@ class Text:
     ANSWER_NUMBER_PROMPT = "정답 번호를 입력하세요 (1~4): "
     HINT_INPUT_PROMPT = "힌트를 입력하세요 (선택): "
     CONFIRM_DELETE_PROMPT = "정말 삭제하시겠습니까? (y/n): "
-    CONFIRM_HINT_PROMPT = "힌트를 보시겠습니까? (y/n): "
 
     FILE_NOT_FOUND_TEMPLATE = "{file_path} 파일이 없어 기본값으로 진행합니다."
     FILE_BROKEN_TEMPLATE = "{file_path} 파일이 손상되어 기본값으로 진행합니다."
@@ -139,6 +138,10 @@ class Text:
     DELETED_QUESTION_TEMPLATE = "삭제된 문제: {question}"
 
     HINT_TEMPLATE = "힌트: {hint}"
+    HINT_GUIDE = "\n[힌트: 힌트를 보려면 Y를 입력해주세요.]"
+    NO_HINT = "이 문제에는 힌트가 없습니다."
+    HINT_ALREADY_SHOWN = "이미 힌트를 확인했습니다."
+    ANSWER_OR_Y_ONLY = "숫자 또는 Y만 입력할 수 있습니다."
     HINT_PENALTY_TEMPLATE = "힌트를 사용하면 {penalty}점 차감됩니다."
 
     RECENT_SCORE_HISTORY = "\n최근 점수 기록:"
