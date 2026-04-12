@@ -19,6 +19,18 @@ class QuizGame:
         self.score_history = []
         self.quizzes = self.load_state()
 
+    def clear_screen(self):
+        """운영체제에 맞게 콘솔 화면을 정리한다."""
+        command = "cls" if os.name == "nt" else "clear"
+        os.system(command)
+
+    def pause(self):
+        """사용자가 결과를 읽을 수 있도록 잠시 대기한다."""
+        try:
+            input("\n엔터를 누르면 메뉴로 돌아갑니다...")
+        except (KeyboardInterrupt, EOFError):
+            self.is_running = False
+
     def load_json_file(self, file_path, default_value):
         """JSON 파일을 읽고 실패 시 기본값을 반환한다.
 
@@ -539,10 +551,12 @@ class QuizGame:
 
     def play_quiz(self):
         """등록된 퀴즈를 랜덤 순서로 출제하고 결과를 출력한다."""
-        print("\n=== 퀴즈 풀기 ===")
+        self.clear_screen()
+        print("=== 퀴즈 풀기 ===")
 
         if not self.quizzes:
             print("등록된 퀴즈가 없습니다.")
+            self.pause()
             return
 
         max_count = len(self.quizzes)
@@ -559,6 +573,8 @@ class QuizGame:
         total_count = len(quiz_list)
 
         for index, quiz in enumerate(quiz_list, start=1):
+            self.clear_screen()
+            print("=== 퀴즈 풀기 ===")
             print(f"\n[{index}/{total_count}]")
             quiz.display()
 
@@ -574,12 +590,17 @@ class QuizGame:
                 return
 
             if quiz.is_correct(user_answer):
-                correct_count += 1
                 print("정답입니다.")
+                correct_count += 1
             else:
                 correct_text = quiz.choices[quiz.answer - 1]
                 print("오답입니다.")
                 print(f"정답은 {quiz.answer}번: {correct_text}")
+
+            self.pause()
+
+            if not self.is_running:
+                return
 
         score = self.calculate_score(correct_count, total_count, hint_used_count)
         self.update_best_score(score)
@@ -591,15 +612,18 @@ class QuizGame:
         )
         self.save_state()
 
-        print("\n=== 퀴즈 결과 ===")
+        self.clear_screen()
+        print("=== 퀴즈 결과 ===")
         print(f"정답 수: {correct_count}/{total_count}")
         print(f"힌트 사용 횟수: {hint_used_count}회")
         print(f"점수: {score}점")
         print(f"최고 점수: {self.best_score}점")
+        self.pause()
 
     def add_quiz(self):
         """새 퀴즈를 입력받아 목록에 추가한다."""
-        print("\n=== 퀴즈 추가 ===")
+        self.clear_screen()
+        print("=== 퀴즈 추가 ===")
 
         question = self.get_non_empty_input("문제를 입력하세요: ")
 
@@ -637,25 +661,32 @@ class QuizGame:
 
         print("새 퀴즈가 추가되었습니다.")
         print(f"현재 등록된 퀴즈 수: {len(self.quizzes)}개")
+        self.pause()
 
     def show_quiz_list(self):
         """등록된 퀴즈 목록을 출력한다."""
-        print("\n=== 퀴즈 목록 ===")
+        self.clear_screen()
+        print("=== 퀴즈 목록 ===")
 
         if not self.quizzes:
             print("등록된 퀴즈가 없습니다.")
+            self.pause()
             return
 
         for index, quiz in enumerate(self.quizzes, start=1):
             print(f"{index}. {quiz.question}")
 
+        self.pause()
+
     def show_score(self):
         """현재 최고 점수와 최근 점수 기록을 출력한다."""
-        print("\n=== 점수 확인 ===")
+        self.clear_screen()
+        print("=== 점수 확인 ===")
         print(f"현재 최고 점수: {self.best_score}점")
 
         if not self.score_history:
             print("저장된 점수 기록이 없습니다.")
+            self.pause()
             return
 
         print("\n최근 점수 기록:")
@@ -671,15 +702,20 @@ class QuizGame:
                 f"점수: {history['score']}점"
             )
 
+        self.pause()
+
     def delete_quiz(self):
         """퀴즈 번호를 받아 삭제하고 저장 파일에도 반영한다."""
-        print("\n=== 퀴즈 삭제 ===")
+        self.clear_screen()
+        print("=== 퀴즈 삭제 ===")
 
         if not self.quizzes:
             print("삭제할 퀴즈가 없습니다.")
+            self.pause()
             return
 
-        self.show_quiz_list()
+        for index, quiz in enumerate(self.quizzes, start=1):
+            print(f"{index}. {quiz.question}")
 
         quiz_number = self.get_choice_number_input(
             "삭제할 퀴즈 번호를 입력하세요: ",
@@ -700,6 +736,7 @@ class QuizGame:
 
         if not is_confirmed:
             print("퀴즈 삭제를 취소했습니다.")
+            self.pause()
             return
 
         deleted_quiz = self.quizzes.pop(quiz_number - 1)
@@ -708,6 +745,7 @@ class QuizGame:
         print("퀴즈가 삭제되었습니다.")
         print(f"삭제된 문제: {deleted_quiz.question}")
         print(f"현재 등록된 퀴즈 수: {len(self.quizzes)}개")
+        self.pause()
 
     def exit_game(self):
         """프로그램을 종료한다."""
@@ -717,6 +755,7 @@ class QuizGame:
     def run(self):
         """게임 메인 루프를 실행한다."""
         while self.is_running:
+            self.clear_screen()
             self.display_menu()
             choice = self.get_menu_choice()
 
