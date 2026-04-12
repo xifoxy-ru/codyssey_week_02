@@ -66,7 +66,8 @@ class Text:
     SECTION_SHOW_SCORE = "=== 점수 확인 ==="
     SECTION_DELETE_QUIZ = "=== 퀴즈 삭제 ==="
 
-    PAUSE_PROMPT = "\n엔터를 누르면 메뉴로 돌아갑니다..."
+    PAUSE_PROMPT = "\n엔터를 누르면 메뉴로 돌아갑니다...\n"
+    
     MENU_PROMPT = "메뉴 번호를 입력하세요: "
     ANSWER_PROMPT = "정답 번호를 입력하세요: "
     QUIZ_COUNT_PROMPT = "몇 문제를 풀겠습니까?: "
@@ -89,12 +90,10 @@ class Text:
     INVALID_ANSWER = "정답 번호가 올바르지 않은 항목을 건너뜁니다."
     EMPTY_DEFAULT_QUIZZES = "기본 퀴즈 데이터도 비어 있어 빈 상태로 시작합니다."
     STATE_SAVE_ERROR = "state.json 저장 중 오류가 발생했습니다."
-    STATE_FORMAT_ERROR = "state.json 형식이 올바르지 않아 기본 퀴즈로 복구합니다."
     STATE_QUIZZES_TYPE_ERROR = "state.json의 quizzes 형식이 올바르지 않아 복구를 시도합니다."
     STATE_BEST_SCORE_TYPE_ERROR = "state.json의 best_score 형식이 올바르지 않아 0으로 초기화합니다."
     STATE_HISTORY_TYPE_ERROR = "state.json의 score_history 형식이 올바르지 않아 빈 목록으로 초기화합니다."
     STATE_INVALID_QUIZ_DATA = "state.json의 퀴즈 데이터가 잘못되어 기본 퀴즈로 복구합니다."
-    STATE_INVALID_OR_EMPTY = "state.json 퀴즈 데이터가 비어 있거나 잘못되어 복구를 시도합니다."
 
     EMPTY_MENU_INPUT = "입력이 비어 있습니다. 1부터 6까지 입력하세요."
     EMPTY_ANSWER_INPUT = "입력이 비어 있습니다. 정답 번호를 입력하세요."

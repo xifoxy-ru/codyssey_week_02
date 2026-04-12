@@ -124,15 +124,22 @@
 
 ## 7. 파일 구조
 
-예상 파일 구조는 다음과 같습니다.
+파일 구조는 다음과 같습니다.
 
 ```bash
 project/
+├─ app/
+│  ├─ __init__.py
+│  ├─ quiz.py
+│  ├─ quiz_game.py
+│  ├─ constants.py
+│  └─ enums.py
+├─ data/
+│  ├─ default_quizzes.json
+│  └─ state.json
 ├─ main.py
-├─ quiz.py
-├─ quiz_game.py
-├─ state.json
 ├─ README.md
+├─ LICENSE
 ├─ .gitignore
 └─ docs/
    └─ screenshots/
@@ -140,8 +147,7 @@ project/
       ├─ play.png
       ├─ add_quiz.png
       ├─ list.png
-      ├─ score.png
-      └─ git_log.png
+      └─ score.png
 ```
 
 ### 파일 설명
@@ -222,7 +228,7 @@ project/
 }
 ```
 
-## 9. 예외 처리 계획
+## 9. 예외 처리
 
 프로그램이 비정상 종료되지 않도록 다음 상황을 처리했습니다.
 
@@ -384,7 +390,7 @@ python3 main.py
 - [x] 최소 2개 이상의 클래스를 사용했다.
 - [x] Git 커밋이 10개 이상이다.
 - [x] 브랜치 생성 및 병합 기록이 있다.
-- [ ] `clone`과 `pull` 사용 기록이 있다.
+- [x] `clone`과 `pull` 사용 기록이 있다.
 - [x] README가 최종 구현 내용과 일치한다.
 
 ---

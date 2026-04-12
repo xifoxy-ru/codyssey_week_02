@@ -19,7 +19,8 @@ class QuizGame:
         self.hint_penalty = GameRule.HINT_PENALTY
         self.best_score = GameRule.INITIAL_BEST_SCORE
         self.score_history = []
-        self.quizzes = self.load_state()
+        self.quizzes = []
+        self.startup_messages = []
 
     def clear_screen(self):
         """운영체제에 맞게 콘솔 화면을 정리한다."""
@@ -34,9 +35,29 @@ class QuizGame:
         """사용자가 결과를 읽을 수 있도록 잠시 대기한다."""
         try:
             input(Text.PAUSE_PROMPT)
-        except (KeyboardInterrupt, EOFError):
+        except KeyboardInterrupt:
+            print(Text.INTERRUPT_MENU)
+        except EOFError:
             print(Text.EOF_SAFE_EXIT)
             self.is_running = False
+
+    def show_startup_messages(self):
+        """시작 시점에 누적된 안내 메시지를 한 번만 출력한다."""
+        if not self.startup_messages:
+            return
+
+        self.clear_screen()
+
+        for message in self.startup_messages:
+            print(message)
+
+        self.pause()
+        self.startup_messages.clear()
+
+    def add_startup_message(self, message):
+        """중복되지 않게 시작 메시지를 누적한다."""
+        if message not in self.startup_messages:
+            self.startup_messages.append(message)
 
     def load_json_file(self, file_path, default_value):
         """JSON 파일을 읽고 실패 시 기본값을 반환한다."""
@@ -44,11 +65,17 @@ class QuizGame:
             with open(file_path, "r", encoding=FileConfig.ENCODING) as file:
                 return json.load(file)
         except FileNotFoundError:
-            print(Text.FILE_NOT_FOUND_TEMPLATE.format(file_path=file_path))
+            self.add_startup_message(
+                Text.FILE_NOT_FOUND_TEMPLATE.format(file_path=file_path)
+            )
         except json.JSONDecodeError:
-            print(Text.FILE_BROKEN_TEMPLATE.format(file_path=file_path))
+            self.add_startup_message(
+                Text.FILE_BROKEN_TEMPLATE.format(file_path=file_path)
+            )
         except OSError:
-            print(Text.FILE_READ_ERROR_TEMPLATE.format(file_path=file_path))
+            self.add_startup_message(
+                Text.FILE_READ_ERROR_TEMPLATE.format(file_path=file_path)
+            )
 
         return default_value
 
@@ -57,7 +84,7 @@ class QuizGame:
         quiz_data_list = self.load_json_file(self.default_quiz_file, [])
 
         if not isinstance(quiz_data_list, list):
-            print(Text.DEFAULT_QUIZ_TYPE_ERROR)
+            self.add_startup_message(Text.DEFAULT_QUIZ_TYPE_ERROR)
             return []
 
         return quiz_data_list
@@ -68,7 +95,7 @@ class QuizGame:
 
         for quiz_data in quiz_data_list:
             if not isinstance(quiz_data, dict):
-                print(Text.INVALID_QUIZ_ITEM)
+                self.add_startup_message(Text.INVALID_QUIZ_ITEM)
                 continue
 
             question = quiz_data.get(JsonKey.QUESTION)
@@ -77,22 +104,22 @@ class QuizGame:
             hint = quiz_data.get(JsonKey.HINT, "")
 
             if not isinstance(question, str) or not question.strip():
-                print(Text.INVALID_QUESTION)
+                self.add_startup_message(Text.INVALID_QUESTION)
                 continue
 
             if not isinstance(choices, list) or len(choices) != GameRule.CHOICE_COUNT:
-                print(Text.INVALID_CHOICES)
+                self.add_startup_message(Text.INVALID_CHOICES)
                 continue
 
             if not all(isinstance(choice, str) and choice.strip() for choice in choices):
-                print(Text.INVALID_CHOICE_CONTENT)
+                self.add_startup_message(Text.INVALID_CHOICE_CONTENT)
                 continue
 
             if (
                 not isinstance(answer, int)
                 or not GameRule.CHOICE_MIN <= answer <= GameRule.CHOICE_COUNT
             ):
-                print(Text.INVALID_ANSWER)
+                self.add_startup_message(Text.INVALID_ANSWER)
                 continue
 
             if not isinstance(hint, str):
@@ -114,7 +141,7 @@ class QuizGame:
         quizzes = self.create_quiz_objects(quiz_data_list)
 
         if not quizzes:
-            print(Text.EMPTY_DEFAULT_QUIZZES)
+            self.add_startup_message(Text.EMPTY_DEFAULT_QUIZZES)
             return {
                 JsonKey.QUIZZES: [],
                 JsonKey.BEST_SCORE: GameRule.INITIAL_BEST_SCORE,
@@ -129,6 +156,9 @@ class QuizGame:
 
     def save_state(self):
         """현재 상태를 state.json 파일에 저장한다."""
+        if self.quizzes is None:
+            return
+
         state_data = {
             JsonKey.QUIZZES: [quiz.to_dict() for quiz in self.quizzes],
             JsonKey.BEST_SCORE: self.best_score,
@@ -164,22 +194,22 @@ class QuizGame:
         score_history = state_data.get(JsonKey.SCORE_HISTORY, [])
 
         if not isinstance(quiz_data_list, list):
-            print(Text.STATE_QUIZZES_TYPE_ERROR)
+            self.add_startup_message(Text.STATE_QUIZZES_TYPE_ERROR)
             state_data = self.create_initial_state_data()
             quiz_data_list = state_data[JsonKey.QUIZZES]
 
         if not isinstance(best_score, int):
-            print(Text.STATE_BEST_SCORE_TYPE_ERROR)
+            self.add_startup_message(Text.STATE_BEST_SCORE_TYPE_ERROR)
             best_score = GameRule.INITIAL_BEST_SCORE
 
         if not isinstance(score_history, list):
-            print(Text.STATE_HISTORY_TYPE_ERROR)
+            self.add_startup_message(Text.STATE_HISTORY_TYPE_ERROR)
             score_history = []
 
         quizzes = self.create_quiz_objects(quiz_data_list)
 
         if not quizzes and quiz_data_list:
-            print(Text.STATE_INVALID_QUIZ_DATA)
+            self.add_startup_message(Text.STATE_INVALID_QUIZ_DATA)
             state_data = self.create_initial_state_data()
             quiz_data_list = state_data[JsonKey.QUIZZES]
             quizzes = self.create_quiz_objects(quiz_data_list)
@@ -415,23 +445,6 @@ class QuizGame:
                 print(Text.EOF_SAFE_EXIT)
                 self.is_running = False
                 return False
-
-    def get_hint_usage(self, quiz):
-        """힌트 사용 여부를 확인하고, 사용 시 힌트를 출력한다."""
-        if not quiz.hint:
-            return False
-
-        is_confirmed = self.get_confirmation(Text.CONFIRM_HINT_PROMPT)
-
-        if not self.is_running:
-            return False
-
-        if is_confirmed:
-            print(Text.HINT_TEMPLATE.format(hint=quiz.hint))
-            print(Text.HINT_PENALTY_TEMPLATE.format(penalty=self.hint_penalty))
-            return True
-
-        return False
 
     def get_randomized_quizzes(self):
         """현재 퀴즈 목록을 랜덤 순서로 섞어 반환한다."""
@@ -694,6 +707,16 @@ class QuizGame:
 
     def run(self):
         """게임 메인 루프를 실행한다."""
+        self.quizzes = self.load_state()
+
+        if not self.is_running:
+            return
+
+        self.show_startup_messages()
+
+        if not self.is_running:
+            return
+
         while self.is_running:
             self.clear_screen()
             self.display_menu()
